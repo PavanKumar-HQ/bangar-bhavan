@@ -12,21 +12,7 @@ import { History } from './pages/History';
 import { MenuManagement } from './pages/MenuManagement';
 import { Settings } from './pages/Settings';
 
-const ProtectedLayout: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-cream-50 flex items-center justify-center font-bold text-darkbrown-800">
-        Initializing POS Engine...
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
+const MainLayout: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-cream-50 text-darkbrown-800 antialiased">
       <Header />
@@ -45,8 +31,8 @@ export const App: React.FC = () => {
         <SyncProvider>
           <Router>
             <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route element={<ProtectedLayout />}>
+              <Route path="/login" element={<Navigate to="/" replace />} />
+              <Route element={<MainLayout />}>
                 <Route path="/" element={<Billing />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/history" element={<History />} />

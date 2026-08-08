@@ -13,59 +13,23 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const DEFAULT_COUNTER_USER: User = {
+  id: 'counter_admin_01',
+  username: 'admin',
+  name: 'Bangar Bhavan Counter Operator',
+  tenantId: 'bangar-bhavan-default',
+  shopName: 'Bangar Bhavan Chats'
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('bbc_pos_token'));
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('bbc_pos_user');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [token] = useState<string>('bangar_instant_pos_token_2026');
+  const [user] = useState<User>(DEFAULT_COUNTER_USER);
 
-  useEffect(() => {
-    const initAuth = async () => {
-      if (token) {
-        try {
-          const res = await api.get('/auth/me');
-          setUser({
-            id: res.data.id,
-            username: res.data.username,
-            name: res.data.name,
-            tenantId: res.data.tenantId,
-            shopName: res.data.tenant.name
-          });
-        } catch (err) {
-          localStorage.removeItem('bbc_pos_token');
-          localStorage.removeItem('bbc_pos_user');
-          setToken(null);
-          setUser(null);
-        }
-      }
-      setIsLoading(false);
-    };
-
-    initAuth();
-  }, [token]);
-
-  const login = async (username: string, password: string) => {
-    const res = await api.post('/auth/login', { username, password });
-    const { token: authToken, user: userData } = res.data;
-
-    localStorage.setItem('bbc_pos_token', authToken);
-    localStorage.setItem('bbc_pos_user', JSON.stringify(userData));
-
-    setToken(authToken);
-    setUser(userData);
-  };
-
-  const logout = () => {
-    localStorage.removeItem('bbc_pos_token');
-    localStorage.removeItem('bbc_pos_user');
-    setToken(null);
-    setUser(null);
-  };
+  const login = async () => {};
+  const logout = () => {};
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated: true, isLoading: false, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
