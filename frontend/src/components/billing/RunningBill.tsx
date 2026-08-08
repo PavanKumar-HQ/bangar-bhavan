@@ -37,7 +37,7 @@ export const RunningBill: React.FC<RunningBillProps> = ({
   ];
 
   return (
-    <div className="bg-white rounded-xl border-2 border-deepred-800/30 p-3 sm:p-4 shadow-lg flex flex-col justify-between h-full gap-2.5">
+    <div className="bg-white border-2 border-deepred-800 rounded-xl p-3 sm:p-4 shadow-md flex flex-col justify-between h-full overflow-y-auto gap-2.5">
       {/* Header */}
       <div className="flex items-center justify-between pb-2 border-b border-cream-200">
         <div className="flex items-center gap-2">
@@ -156,13 +156,13 @@ export const RunningBill: React.FC<RunningBillProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-3 gap-1.5 pt-1 sticky bottom-0 bg-white py-1">
+        {/* Big Prominent Action Buttons */}
+        <div className="grid grid-cols-3 gap-2 pt-2">
           <button
             type="button"
             onClick={onClearBill}
             disabled={items.length === 0}
-            className="py-2.5 px-2 rounded-lg font-extrabold text-xs text-deepred-800 bg-deepred-100 hover:bg-deepred-200 disabled:opacity-40 transition-all border border-deepred-300"
+            className="py-3 px-2 rounded-xl font-extrabold text-xs text-deepred-800 bg-deepred-100 hover:bg-deepred-200 disabled:opacity-40 transition-all border border-deepred-300"
           >
             Cancel
           </button>
@@ -171,9 +171,9 @@ export const RunningBill: React.FC<RunningBillProps> = ({
             type="button"
             onClick={onGenerateBill}
             disabled={items.length === 0 || isSubmitting}
-            className="col-span-2 py-3 px-3 rounded-xl font-black text-xs sm:text-sm text-cream-50 bg-deepred-800 hover:bg-deepred-900 active:scale-95 disabled:opacity-40 shadow-lg flex items-center justify-center gap-1.5 transition-all border border-deepred-900"
+            className="col-span-2 py-3.5 px-4 rounded-xl font-black text-sm text-cream-50 bg-deepred-800 hover:bg-deepred-900 active:scale-95 disabled:opacity-40 shadow-xl flex items-center justify-center gap-2 transition-all border-2 border-deepred-900 uppercase tracking-wider"
           >
-            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-softyellow-300 stroke-[2.5]" />
+            <CheckCircle2 className="w-5 h-5 text-softyellow-300 stroke-[2.5]" />
             <span>{isSubmitting ? 'GENERATING...' : 'GENERATE BILL'}</span>
           </button>
         </div>
