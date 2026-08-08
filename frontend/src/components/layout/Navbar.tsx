@@ -12,7 +12,7 @@ export const Navbar: React.FC = () => {
   ];
 
   return (
-    <nav className="bg-cream-100 border-t-2 border-cream-300 sm:border-t-0 sm:border-b border-cream-300 py-1.5 px-2 flex justify-around sm:justify-start sm:gap-2 shadow-inner z-30">
+    <nav className="bg-cream-100 border-t-2 sm:border-t-0 sm:border-b border-cream-300 py-1.5 px-2 flex justify-around sm:justify-start sm:gap-2 shadow-inner z-30 fixed sm:static bottom-0 left-0 right-0">
       {navItems.map((item) => {
         const Icon = item.icon;
         return (
@@ -20,7 +20,7 @@ export const Navbar: React.FC = () => {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex flex-col sm:flex-row items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-bold text-xs sm:text-sm transition-all duration-150 active:scale-95 ${
+              `flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 px-2.5 sm:px-4 py-1 sm:py-2.5 rounded-lg font-bold text-[10px] sm:text-sm transition-all duration-150 active:scale-95 ${
                 isActive
                   ? 'bg-deepred-800 text-cream-50 shadow-md ring-2 ring-deepred-600'
                   : 'text-darkbrown-800 hover:bg-cream-200/80 hover:text-deepred-800'
