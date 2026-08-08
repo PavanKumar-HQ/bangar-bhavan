@@ -10,6 +10,19 @@ import { usePrinter } from '../context/PrinterContext';
 import { useSync } from '../context/SyncContext';
 import { sound } from '../lib/sound';
 
+const DEFAULT_FALLBACK_DISHES: MenuItem[] = [
+  { id: 'bb_m01', tenantId: 'default', name: 'Pani Puri (6 pcs)', category: 'PURI', price: 40, isActive: true, isFavorite: true, displayOrder: 1 },
+  { id: 'bb_m02', tenantId: 'default', name: 'Masala Puri', category: 'PURI', price: 50, isActive: true, isFavorite: true, displayOrder: 2 },
+  { id: 'bb_m03', tenantId: 'default', name: 'Sev Puri', category: 'PURI', price: 50, isActive: true, isFavorite: true, displayOrder: 3 },
+  { id: 'bb_m04', tenantId: 'default', name: 'Dahi Puri', category: 'PURI', price: 60, isActive: true, isFavorite: false, displayOrder: 4 },
+  { id: 'bb_m05', tenantId: 'default', name: 'Bhel Puri', category: 'CHAT', price: 50, isActive: true, isFavorite: false, displayOrder: 5 },
+  { id: 'bb_m06', tenantId: 'default', name: 'Samosa Masala', category: 'CHAT', price: 45, isActive: true, isFavorite: false, displayOrder: 6 },
+  { id: 'bb_m07', tenantId: 'default', name: 'Aloo Tikki Chat', category: 'CHAT', price: 55, isActive: true, isFavorite: false, displayOrder: 7 },
+  { id: 'bb_m08', tenantId: 'default', name: 'Vada Pav (2 pcs)', category: 'SNACKS', price: 40, isActive: true, isFavorite: false, displayOrder: 8 },
+  { id: 'bb_m09', tenantId: 'default', name: 'Pav Bhaji', category: 'SNACKS', price: 90, isActive: true, isFavorite: false, displayOrder: 9 },
+  { id: 'bb_m10', tenantId: 'default', name: 'Rose Milk (Chilled)', category: 'BEVERAGES', price: 35, isActive: true, isFavorite: false, displayOrder: 10 }
+];
+
 export const Billing: React.FC = () => {
   const { printReceipt, isConnected } = usePrinter();
   const { isOnline } = useSync();
@@ -42,18 +55,27 @@ export const Billing: React.FC = () => {
           api.get('/settings'),
           api.get('/orders/pending')
         ]);
-        setDishes(menuRes.data);
-        setSettings(settingsRes.data);
-        setPendingOrders(pendingRes.data);
-        cacheMenuInDB(menuRes.data);
+        if (Array.isArray(menuRes.data) && menuRes.data.length > 0) {
+          setDishes(menuRes.data);
+          cacheMenuInDB(menuRes.data);
+        } else {
+          const offlineMenu = await getMenuFromDB();
+          setDishes(offlineMenu.length > 0 ? offlineMenu : DEFAULT_FALLBACK_DISHES);
+        }
+        if (settingsRes?.data) setSettings(settingsRes.data);
+        if (Array.isArray(pendingRes?.data)) setPendingOrders(pendingRes.data);
       } else {
         const offlineMenu = await getMenuFromDB();
-        setDishes(offlineMenu);
+        setDishes(offlineMenu.length > 0 ? offlineMenu : DEFAULT_FALLBACK_DISHES);
       }
     } catch (err) {
       console.warn('Network request failed, retrieving cached menu from IndexedDB:', err);
-      const offlineMenu = await getMenuFromDB();
-      setDishes(offlineMenu);
+      try {
+        const offlineMenu = await getMenuFromDB();
+        setDishes(offlineMenu.length > 0 ? offlineMenu : DEFAULT_FALLBACK_DISHES);
+      } catch {
+        setDishes(DEFAULT_FALLBACK_DISHES);
+      }
     } finally {
       setIsLoadingMenu(false);
     }
