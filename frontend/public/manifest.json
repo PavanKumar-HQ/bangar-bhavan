@@ -1,0 +1,16 @@
+{
+  "short_name": "Bangar Chats",
+  "name": "Bangar Bhavan Chats Billing POS",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FFFDF7",
+  "theme_color": "#991B1B",
+  "display": "standalone",
+  "orientation": "any"
+}

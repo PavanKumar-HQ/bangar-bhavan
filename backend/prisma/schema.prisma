@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id          String   @id @default(uuid())
+  name        String   @default("Bangar Bhavan Chats")
+  slug        String   @unique @default("bangar-bhavan")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  menuItems   MenuItem[]
+  orders      Order[]
+  settings    Settings?
+  archives    Archive[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  tenantId  String
+  username  String   @unique
+  password  String
+  name      String
+  role      String   @default("ADMIN")
+  createdAt DateTime @default(now())
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model MenuItem {
+  id           String   @id @default(uuid())
+  tenantId     String
+  name         String
+  price        Float
+  category     String   @default("Chats")
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  isFavorite   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orderItems   OrderItem[]
+
+  @@index([tenantId, isActive, displayOrder])
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  tenantId      String
+  invoiceNo     String      @unique
+  subtotal      Float
+  parcelCharge  Float       @default(0)
+  grandTotal    Float
+  paymentMode   String      // CASH, UPI, CARD
+  status        String      @default("PENDING") // PENDING, SERVED, CANCELLED
+  isParcel      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  servedAt      DateTime?
+  syncedFromApp Boolean     @default(false)
+
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items         OrderItem[]
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status])
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  dishId    String?
+  name      String
+  price     Float
+  quantity  Int
+
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  dish      MenuItem? @relation(fields: [dishId], references: [id], onDelete: SetNull)
+}
+
+model Settings {
+  id           String   @id @default(uuid())
+  tenantId     String   @unique
+  shopName     String   @default("Bangar Bhavan Chats")
+  address      String   @default("Near Central Bus Stand, Bengaluru")
+  phone        String   @default("+91 98765 43210")
+  footerText   String   @default("Authentic Taste • Quality Guaranteed! Visit Again!")
+  parcelCharge Float    @default(5.0)
+  currency     String   @default("₹")
+  updatedAt    DateTime @updatedAt
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Archive {
+  id          String   @id @default(uuid())
+  tenantId    String
+  periodLabel String
+  orderCount  Int
+  totalAmount Float
+  jsonData    String
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}

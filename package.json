@@ -1,0 +1,15 @@
+{
+  "name": "bangar-bhavan-chats-pos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bangar Bhavan Chats Single Counter Billing POS PWA Solution",
+  "scripts": {
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"red,yellow\" \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "build": "npm run build --prefix backend && npm run build --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
