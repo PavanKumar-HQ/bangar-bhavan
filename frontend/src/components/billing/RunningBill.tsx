@@ -37,7 +37,7 @@ export const RunningBill: React.FC<RunningBillProps> = ({
   ];
 
   return (
-    <div className="bg-white border-2 border-deepred-800 rounded-xl p-3 sm:p-4 shadow-md flex flex-col justify-between h-full overflow-y-auto gap-2.5">
+    <div className="bg-white border-2 border-deepred-800 rounded-xl p-3 sm:p-4 shadow-md flex flex-col justify-between gap-3">
       {/* Header */}
       <div className="flex items-center justify-between pb-2 border-b border-cream-200">
         <div className="flex items-center gap-2">

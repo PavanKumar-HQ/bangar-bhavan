@@ -289,12 +289,12 @@ export const Billing: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-110px)] lg:h-[calc(100vh-110px)] gap-3 p-2.5 sm:p-4 overflow-y-auto lg:overflow-hidden max-w-[1600px] mx-auto w-full pb-20 sm:pb-4">
+    <div className="flex flex-col gap-3 p-2.5 sm:p-4 max-w-[1600px] mx-auto w-full pb-24">
       {/* Pending Orders Strip */}
       <PendingOrdersBar pendingOrders={pendingOrders} servedOrders={servedOrders} onMarkReady={handleMarkReady} />
 
       {/* Main Billing Split: Menu Grid vs Running Bill */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1 overflow-y-auto lg:overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
         {/* Menu Grid */}
         <div className="lg:col-span-8 flex flex-col min-h-[450px] lg:h-full overflow-hidden">
           <MenuGrid

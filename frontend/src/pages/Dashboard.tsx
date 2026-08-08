@@ -144,6 +144,61 @@ export const Dashboard: React.FC = () => {
         else if (o.paymentMode === 'CARD') cardTotal += o.grandTotal || 0;
       });
 
+      // Hourly breakdown
+      const hourlyMap: Record<string, { revenue: number; orders: number }> = {
+        '09:00': { revenue: 0, orders: 0 },
+        '12:00': { revenue: 0, orders: 0 },
+        '15:00': { revenue: 0, orders: 0 },
+        '18:00': { revenue: 0, orders: 0 },
+        '21:00': { revenue: 0, orders: 0 }
+      };
+
+      todayOrders.forEach((o) => {
+        if (!o.createdAt) return;
+        const hourNum = new Date(o.createdAt).getHours();
+        let slot = '09:00';
+        if (hourNum >= 21) slot = '21:00';
+        else if (hourNum >= 18) slot = '18:00';
+        else if (hourNum >= 15) slot = '15:00';
+        else if (hourNum >= 12) slot = '12:00';
+
+        hourlyMap[slot].revenue += o.grandTotal || 0;
+        hourlyMap[slot].orders += 1;
+      });
+
+      const revenueByHour = Object.entries(hourlyMap).map(([hour, val]) => ({
+        hour,
+        revenue: val.revenue,
+        orders: val.orders
+      }));
+
+      // Weekly breakdown
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const weeklyMap: Record<string, { revenue: number; orders: number }> = {
+        Mon: { revenue: 0, orders: 0 },
+        Tue: { revenue: 0, orders: 0 },
+        Wed: { revenue: 0, orders: 0 },
+        Thu: { revenue: 0, orders: 0 },
+        Fri: { revenue: 0, orders: 0 },
+        Sat: { revenue: 0, orders: 0 },
+        Sun: { revenue: 0, orders: 0 }
+      };
+
+      allOrders.forEach((o) => {
+        if (!o.createdAt) return;
+        const dayName = days[new Date(o.createdAt).getDay()];
+        if (weeklyMap[dayName]) {
+          weeklyMap[dayName].revenue += o.grandTotal || 0;
+          weeklyMap[dayName].orders += 1;
+        }
+      });
+
+      const weeklyRevenue = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => ({
+        day,
+        revenue: weeklyMap[day].revenue,
+        orders: weeklyMap[day].orders
+      }));
+
       setData({
         today: {
           revenue: todayRevenue,
@@ -162,8 +217,8 @@ export const Dashboard: React.FC = () => {
           growthPercentage: 0
         },
         charts: {
-          revenueByHour: DEFAULT_FALLBACK_DASHBOARD.charts.revenueByHour,
-          weeklyRevenue: DEFAULT_FALLBACK_DASHBOARD.charts.weeklyRevenue,
+          revenueByHour,
+          weeklyRevenue,
           topSellingDishes: topDishesArray.slice(0, 5),
           paymentDistribution: [
             { mode: 'CASH', value: cashTotal },
