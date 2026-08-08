@@ -157,7 +157,7 @@ export const RunningBill: React.FC<RunningBillProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 pt-1">
+        <div className="grid grid-cols-3 gap-1.5 pt-1 sticky bottom-0 bg-white py-1">
           <button
             type="button"
             onClick={onClearBill}
@@ -171,9 +171,9 @@ export const RunningBill: React.FC<RunningBillProps> = ({
             type="button"
             onClick={onGenerateBill}
             disabled={items.length === 0 || isSubmitting}
-            className="sm:col-span-2 py-3 px-4 rounded-xl font-black text-sm text-cream-50 bg-deepred-800 hover:bg-deepred-900 disabled:opacity-40 shadow-md flex items-center justify-center gap-1.5 transition-all border border-deepred-900 active:scale-95"
+            className="col-span-2 py-3 px-3 rounded-xl font-black text-xs sm:text-sm text-cream-50 bg-deepred-800 hover:bg-deepred-900 active:scale-95 disabled:opacity-40 shadow-lg flex items-center justify-center gap-1.5 transition-all border border-deepred-900"
           >
-            <CheckCircle2 className="w-5 h-5 text-softyellow-300 stroke-[2.5]" />
+            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-softyellow-300 stroke-[2.5]" />
             <span>{isSubmitting ? 'GENERATING...' : 'GENERATE BILL'}</span>
           </button>
         </div>
