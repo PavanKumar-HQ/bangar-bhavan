@@ -1,4 +1,4 @@
-import { MenuItem, Order } from '../types';
+import { MenuItem, Order, ShopSettings } from '../types';
 
 const DB_NAME = 'BangarBhavanPOS_DB';
 const DB_VERSION = 1;
@@ -70,4 +70,55 @@ export const removeOrderFromOfflineQueue = async (localId: string) => {
   const tx = db.transaction('pending_sync_orders', 'readwrite');
   const store = tx.objectStore('pending_sync_orders');
   store.delete(localId);
+};
+
+export const saveOrderToLocalHistory = async (order: Order) => {
+  try {
+    const db = await initIndexedDB();
+    const tx = db.transaction('local_history', 'readwrite');
+    const store = tx.objectStore('local_history');
+    store.put(order);
+  } catch (e) {
+    console.warn('Failed to save to IndexedDB local history:', e);
+  }
+};
+
+export const getLocalHistoryFromDB = async (): Promise<Order[]> => {
+  try {
+    const db = await initIndexedDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction('local_history', 'readonly');
+      const store = tx.objectStore('local_history');
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => resolve([]);
+    });
+  } catch {
+    return [];
+  }
+};
+
+export const saveShopSettingsLocal = (settings: ShopSettings) => {
+  localStorage.setItem('bbc_shop_settings', JSON.stringify(settings));
+};
+
+export const getShopSettingsLocal = (): ShopSettings => {
+  const saved = localStorage.getItem('bbc_shop_settings');
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch {
+      // Fallback
+    }
+  }
+  return {
+    id: 'default_shop',
+    tenantId: 'bangar_bhavan_default',
+    shopName: 'Bangar Bhavan Chats',
+    address: 'Near Central Bus Stand, Bengaluru',
+    phone: '+91 98765 43210',
+    footerText: 'Authentic Taste • Quality Guaranteed! Visit Again!',
+    parcelCharge: 5.0,
+    currency: '₹'
+  };
 };

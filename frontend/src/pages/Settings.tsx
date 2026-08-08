@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShopSettings } from '../types';
 import { api } from '../lib/api';
 import { usePrinter } from '../context/PrinterContext';
+import { getShopSettingsLocal, saveShopSettingsLocal } from '../lib/db';
 import {
   Printer,
   Store,
@@ -37,14 +38,22 @@ export const Settings: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [settingsRes, archivesRes] = await Promise.all([
-        api.get('/settings'),
-        api.get('/archive')
-      ]);
-      setSettings(settingsRes.data);
-      setArchives(archivesRes.data);
+      if (navigator.onLine) {
+        const [settingsRes, archivesRes] = await Promise.all([
+          api.get('/settings'),
+          api.get('/archive')
+        ]);
+        if (settingsRes?.data) {
+          setSettings(settingsRes.data);
+          saveShopSettingsLocal(settingsRes.data);
+        }
+        if (Array.isArray(archivesRes?.data)) setArchives(archivesRes.data);
+      } else {
+        setSettings(getShopSettingsLocal());
+      }
     } catch (err) {
-      console.error('Failed to load settings:', err);
+      console.warn('Failed to load settings from server, loading local settings:', err);
+      setSettings(getShopSettingsLocal());
     } finally {
       setIsLoading(false);
     }
@@ -58,12 +67,17 @@ export const Settings: React.FC = () => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const res = await api.put('/settings', settings);
-      setSettings(res.data);
+      saveShopSettingsLocal(settings);
+      if (navigator.onLine) {
+        const res = await api.put('/settings', settings);
+        if (res?.data) setSettings(res.data);
+      }
       sound.playSuccess();
-      alert('Shop settings updated successfully!');
+      alert('Shop settings updated and saved locally!');
     } catch (err) {
-      alert('Failed to update shop settings');
+      saveShopSettingsLocal(settings);
+      sound.playSuccess();
+      alert('Shop settings saved locally!');
     } finally {
       setIsSaving(false);
     }

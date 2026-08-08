@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MenuItem, Order, PaymentMode, CartItem, ShopSettings } from '../types';
 import { api } from '../lib/api';
-import { cacheMenuInDB, getMenuFromDB, saveOrderOfflineQueue } from '../lib/db';
+import { cacheMenuInDB, getMenuFromDB, saveOrderOfflineQueue, getShopSettingsLocal, saveShopSettingsLocal } from '../lib/db';
 import { MenuGrid } from '../components/billing/MenuGrid';
 import { RunningBill } from '../components/billing/RunningBill';
 import { PendingOrdersBar } from '../components/billing/PendingOrdersBar';
@@ -62,14 +62,21 @@ export const Billing: React.FC = () => {
           const offlineMenu = await getMenuFromDB();
           setDishes(offlineMenu.length > 0 ? offlineMenu : DEFAULT_FALLBACK_DISHES);
         }
-        if (settingsRes?.data) setSettings(settingsRes.data);
+        if (settingsRes?.data) {
+          setSettings(settingsRes.data);
+          saveShopSettingsLocal(settingsRes.data);
+        } else {
+          setSettings(getShopSettingsLocal());
+        }
         if (Array.isArray(pendingRes?.data)) setPendingOrders(pendingRes.data);
       } else {
         const offlineMenu = await getMenuFromDB();
         setDishes(offlineMenu.length > 0 ? offlineMenu : DEFAULT_FALLBACK_DISHES);
+        setSettings(getShopSettingsLocal());
       }
     } catch (err) {
       console.warn('Network request failed, retrieving cached menu from IndexedDB:', err);
+      setSettings(getShopSettingsLocal());
       try {
         const offlineMenu = await getMenuFromDB();
         setDishes(offlineMenu.length > 0 ? offlineMenu : DEFAULT_FALLBACK_DISHES);
