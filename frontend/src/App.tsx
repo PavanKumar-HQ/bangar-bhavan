@@ -11,12 +11,14 @@ import { Dashboard } from './pages/Dashboard';
 import { History } from './pages/History';
 import { MenuManagement } from './pages/MenuManagement';
 import { Settings } from './pages/Settings';
+import { PwaInstallBanner } from './components/common/PwaInstallBanner';
 
 const MainLayout: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-cream-50 text-darkbrown-800 antialiased">
       <Header />
       <Navbar />
+      <PwaInstallBanner />
       <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
