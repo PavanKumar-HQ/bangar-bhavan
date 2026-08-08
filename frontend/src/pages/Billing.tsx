@@ -40,8 +40,23 @@ export const Billing: React.FC = () => {
   });
 
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('CASH');
-  const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
-  const [servedOrders, setServedOrders] = useState<Order[]>([]);
+  const [pendingOrders, setPendingOrders] = useState<Order[]>(() => {
+    // Restore pending orders across page refresh so orders never disappear
+    try {
+      const saved = localStorage.getItem('bbc_pending_orders');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [servedOrders, setServedOrders] = useState<Order[]>(() => {
+    try {
+      const saved = localStorage.getItem('bbc_served_orders');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isLoadingMenu, setIsLoadingMenu] = useState<boolean>(true);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState<boolean>(false);
 
@@ -97,6 +112,15 @@ export const Billing: React.FC = () => {
     localStorage.setItem('bbc_draft_cart', JSON.stringify(cartMap));
     localStorage.setItem('bbc_draft_parcel', String(isParcel));
   }, [cartMap, isParcel]);
+
+  // Persist pending & served orders to localStorage so they survive refresh
+  useEffect(() => {
+    localStorage.setItem('bbc_pending_orders', JSON.stringify(pendingOrders));
+  }, [pendingOrders]);
+
+  useEffect(() => {
+    localStorage.setItem('bbc_served_orders', JSON.stringify(servedOrders.slice(0, 20)));
+  }, [servedOrders]);
 
   // Keyboard Shortcuts for Speed
   useEffect(() => {
@@ -169,7 +193,7 @@ export const Billing: React.FC = () => {
 
   const parcelChargeAmount = settings?.parcelCharge || 5;
 
-  // GENERATE BILL FLOW
+  // GENERATE BILL FLOW — always adds to pendingOrders first, never crashes
   const handleGenerateBill = async () => {
     if (cartItems.length === 0 || isSubmittingOrder) return;
 
@@ -179,7 +203,36 @@ export const Billing: React.FC = () => {
     const itemTotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
     const parcelCharge = isParcel ? parcelChargeAmount : 0;
     const grandTotal = itemTotal + parcelCharge;
+    const localId = `LOCAL-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
+    // Create local order immediately — this ALWAYS gets shown in pending queue
+    const localOrder: Order = {
+      id: localId,
+      tenantId: 'local',
+      invoiceNo: `BBC-${Date.now().toString().slice(-5)}`,
+      subtotal: itemTotal,
+      parcelCharge,
+      grandTotal,
+      paymentMode,
+      status: 'PENDING',
+      isParcel,
+      createdAt: new Date().toISOString(),
+      items: cartItems
+    };
+
+    // Step 1: Immediately add to pending queue & clear cart
+    setPendingOrders((prev) => [...prev, localOrder]);
+    setPreviewOrder(localOrder);
+    setCartMap({});
+    setIsParcel(false);
+    setIsSubmittingOrder(false);
+
+    // Bluetooth Print (non-blocking)
+    if (isConnected) {
+      printReceipt(localOrder, settings);
+    }
+
+    // Step 2: Try to sync to server in background (non-blocking, no crash)
     const payload = {
       items: cartItems,
       subtotal: itemTotal,
@@ -189,66 +242,31 @@ export const Billing: React.FC = () => {
       isParcel
     };
 
-    let createdOrder: Order;
-
     try {
       if (navigator.onLine) {
         const res = await api.post('/orders', payload);
-        createdOrder = res.data;
-        setPendingOrders((prev) => [...prev, createdOrder]);
+        if (res?.data?.id) {
+          // Update local order with server-assigned ID and invoiceNo
+          setPendingOrders((prev) =>
+            prev.map((o) => (o.id === localId ? { ...res.data, status: 'PENDING' } : o))
+          );
+        }
       } else {
-        // Offline Mode: Queue in IndexedDB
-        const offlineRecord = await saveOrderOfflineQueue(payload);
-        createdOrder = {
-          id: offlineRecord.localId,
-          tenantId: 'offline',
-          invoiceNo: `OFFLINE-${Date.now().toString().slice(-4)}`,
-          subtotal: itemTotal,
-          parcelCharge,
-          grandTotal,
-          paymentMode,
-          status: 'PENDING',
-          isParcel,
-          createdAt: new Date().toISOString(),
-          items: cartItems
-        };
-        setPendingOrders((prev) => [...prev, createdOrder]);
+        // Queue in IndexedDB for later sync
+        try {
+          await saveOrderOfflineQueue({ ...payload, localId });
+        } catch (dbErr) {
+          console.warn('IndexedDB queue failed, order stays local:', dbErr);
+        }
       }
-
-      // Open print receipt preview modal
-      setPreviewOrder(createdOrder);
-
-      // Bluetooth Print trigger (Non-blocking if printer connected)
-      if (isConnected) {
-        printReceipt(createdOrder, settings);
+    } catch (apiErr) {
+      console.warn('Server sync failed, order stays in local pending queue:', apiErr);
+      // Try background IndexedDB queue silently
+      try {
+        await saveOrderOfflineQueue({ ...payload, localId });
+      } catch {
+        // Both failed — order is still visible in pendingOrders state, no crash
       }
-
-      // Clear bill immediately for instant operator feedback
-      setCartMap({});
-      setIsParcel(false);
-    } catch (err) {
-      console.error('Order creation error:', err);
-      // Fallback offline queue
-      const offlineRecord = await saveOrderOfflineQueue(payload);
-      createdOrder = {
-        id: offlineRecord.localId,
-        tenantId: 'offline',
-        invoiceNo: `OFFLINE-${Date.now().toString().slice(-4)}`,
-        subtotal: itemTotal,
-        parcelCharge,
-        grandTotal,
-        paymentMode,
-        status: 'PENDING',
-        isParcel,
-        createdAt: new Date().toISOString(),
-        items: cartItems
-      };
-      setPendingOrders((prev) => [...prev, createdOrder]);
-      setPreviewOrder(createdOrder);
-      setCartMap({});
-      setIsParcel(false);
-    } finally {
-      setIsSubmittingOrder(false);
     }
   };
 
@@ -261,7 +279,7 @@ export const Billing: React.FC = () => {
       setServedOrders((prev) => [servedRecord, ...prev]);
     }
     try {
-      if (navigator.onLine && !orderId.startsWith('OFFLINE')) {
+      if (navigator.onLine && !orderId.startsWith('OFFLINE') && !orderId.startsWith('LOCAL')) {
         await api.patch(`/orders/${orderId}`, { status: 'SERVED' });
       }
     } catch (err) {
