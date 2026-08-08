@@ -31,13 +31,61 @@ export const Dashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'TODAY' | 'MONTH'>('TODAY');
 
+  const DEFAULT_FALLBACK_DASHBOARD: DashboardMetrics = {
+    today: {
+      revenue: 0,
+      orders: 0,
+      pending: 0,
+      served: 0,
+      avgBill: 0,
+      parcelCount: 0,
+      topSellingDish: 'None'
+    },
+    month: {
+      revenue: 0,
+      orders: 0,
+      avgBill: 0,
+      prevRevenue: 0,
+      growthPercentage: 0
+    },
+    charts: {
+      revenueByHour: [
+        { hour: '09:00', revenue: 0, orders: 0 },
+        { hour: '12:00', revenue: 0, orders: 0 },
+        { hour: '15:00', revenue: 0, orders: 0 },
+        { hour: '18:00', revenue: 0, orders: 0 },
+        { hour: '21:00', revenue: 0, orders: 0 }
+      ],
+      weeklyRevenue: [
+        { day: 'Mon', revenue: 0, orders: 0 },
+        { day: 'Tue', revenue: 0, orders: 0 },
+        { day: 'Wed', revenue: 0, orders: 0 },
+        { day: 'Thu', revenue: 0, orders: 0 },
+        { day: 'Fri', revenue: 0, orders: 0 },
+        { day: 'Sat', revenue: 0, orders: 0 },
+        { day: 'Sun', revenue: 0, orders: 0 }
+      ],
+      topSellingDishes: [],
+      paymentDistribution: [
+        { mode: 'CASH', value: 0 },
+        { mode: 'UPI', value: 0 },
+        { mode: 'CARD', value: 0 }
+      ]
+    }
+  };
+
   const fetchDashboard = async () => {
     setIsLoading(true);
     try {
       const res = await api.get('/dashboard');
-      setData(res.data);
+      if (res.data && res.data.today && res.data.charts) {
+        setData(res.data);
+      } else {
+        setData(DEFAULT_FALLBACK_DASHBOARD);
+      }
     } catch (err) {
-      console.error('Failed to fetch dashboard metrics:', err);
+      console.warn('Failed to fetch dashboard metrics from server, loading offline fallback:', err);
+      setData(DEFAULT_FALLBACK_DASHBOARD);
     } finally {
       setIsLoading(false);
     }

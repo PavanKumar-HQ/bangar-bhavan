@@ -38,10 +38,11 @@ export const History: React.FC = () => {
         }),
         api.get('/settings')
       ]);
-      setOrders(historyRes.data.orders);
-      setSettings(settingsRes.data);
+      setOrders(Array.isArray(historyRes?.data?.orders) ? historyRes.data.orders : []);
+      if (settingsRes?.data) setSettings(settingsRes.data);
     } catch (err) {
-      console.error('Failed to fetch history:', err);
+      console.warn('Failed to fetch history from server, defaulting to local queue:', err);
+      setOrders([]);
     } finally {
       setIsLoading(false);
     }
