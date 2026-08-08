@@ -44,7 +44,36 @@ export const PendingOrdersBar: React.FC<PendingOrdersBarProps> = ({
 
   return (
     <div className="space-y-2.5">
-      {/* SECTION 1: PENDING TO SERVE */}
+      {/* SECTION 1: KITCHEN PREP QUEUE (Aggregated Items) */}
+      {itemPrepSummary.length > 0 && (
+        <div className="bg-white border-2 border-warmorange-500/60 rounded-xl p-2.5 sm:p-3 shadow-md space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Utensils className="w-4 h-4 text-warmorange-700" />
+              <h3 className="font-display font-extrabold text-xs sm:text-sm text-darkbrown-900 uppercase tracking-wider">
+                KITCHEN PREP QUEUE
+              </h3>
+            </div>
+            <span className="text-[10px] font-extrabold text-warmorange-800 bg-warmorange-100 px-2 py-0.5 rounded-full">
+              Live Aggregate Summary
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 text-xs font-bold">
+            {itemPrepSummary.map((item) => (
+              <span
+                key={item.name}
+                className="bg-softyellow-200 text-darkbrown-900 px-3 py-1 rounded-lg border border-softyellow-400 font-mono text-xs shrink-0 shadow-sm flex items-center gap-1.5"
+              >
+                <span>{item.name}:</span>
+                <strong className="text-deepred-800 font-black text-sm">{item.qty} pcs</strong>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 2: PENDING TO SERVE ORDERS */}
       <div className="bg-softyellow-100 border-2 border-warmorange-500/50 rounded-xl p-2.5 sm:p-3 shadow-md space-y-2">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
           <div className="flex items-center gap-2">
@@ -57,24 +86,6 @@ export const PendingOrdersBar: React.FC<PendingOrdersBarProps> = ({
             Tap MARK AS SERVED when food is ready
           </span>
         </div>
-
-        {/* Aggregated Kitchen Prep Summary Badge */}
-        {itemPrepSummary.length > 0 && (
-          <div className="bg-white p-2 rounded-lg border border-warmorange-300 flex items-center gap-2 overflow-x-auto no-scrollbar text-xs font-bold">
-            <span className="text-[11px] font-black text-warmorange-700 uppercase tracking-wider shrink-0 flex items-center gap-1">
-              <Utensils className="w-3 h-3" />
-              Kitchen Prep Queue:
-            </span>
-            {itemPrepSummary.map((item) => (
-              <span
-                key={item.name}
-                className="bg-softyellow-200 text-darkbrown-900 px-2 py-0.5 rounded-full border border-softyellow-400 font-mono text-[11px] shrink-0"
-              >
-                {item.name}: <strong className="text-deepred-800 font-black">{item.qty} pcs</strong>
-              </span>
-            ))}
-          </div>
-        )}
 
         {/* Pending Order Cards Row */}
         {pendingOrders.length > 0 ? (
