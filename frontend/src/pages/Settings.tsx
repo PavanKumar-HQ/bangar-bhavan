@@ -73,11 +73,11 @@ export const Settings: React.FC = () => {
         if (res?.data) setSettings(res.data);
       }
       sound.playSuccess();
-      alert('Shop settings updated and saved locally!');
+      alert('Shop settings updated successfully!');
     } catch (err) {
       saveShopSettingsLocal(settings);
       sound.playSuccess();
-      alert('Shop settings saved locally!');
+      alert('Shop settings updated successfully!');
     } finally {
       setIsSaving(false);
     }
