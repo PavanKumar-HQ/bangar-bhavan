@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Order, PaymentMode, ShopSettings } from '../types';
 import { api } from '../lib/api';
+import { getLocalHistoryFromDB } from '../lib/db';
 import { usePrinter } from '../context/PrinterContext';
 import {
   Search,
@@ -32,16 +33,53 @@ export const History: React.FC = () => {
   const fetchHistory = async () => {
     setIsLoading(true);
     try {
-      const [historyRes, settingsRes] = await Promise.all([
-        api.get('/history', {
-          params: { search, startDate, endDate, paymentMode, limit: 100 }
-        }),
-        api.get('/settings')
-      ]);
-      setOrders(Array.isArray(historyRes?.data?.orders) ? historyRes.data.orders : []);
-      if (settingsRes?.data) setSettings(settingsRes.data);
+      if (navigator.onLine) {
+        const [historyRes, settingsRes] = await Promise.all([
+          api.get('/history', {
+            params: { search, startDate, endDate, paymentMode, limit: 100 }
+          }),
+          api.get('/settings')
+        ]);
+        if (Array.isArray(historyRes?.data?.orders) && historyRes.data.orders.length > 0) {
+          setOrders(historyRes.data.orders);
+          if (settingsRes?.data) setSettings(settingsRes.data);
+          setIsLoading(false);
+          return;
+        }
+      }
     } catch (err) {
       console.warn('Failed to fetch history from server, defaulting to local queue:', err);
+    }
+
+    try {
+      const dbOrders = await getLocalHistoryFromDB();
+      const savedPendingStr = localStorage.getItem('bbc_pending_orders');
+      const savedPending: Order[] = savedPendingStr ? JSON.parse(savedPendingStr) : [];
+      const savedServedStr = localStorage.getItem('bbc_served_orders');
+      const savedServed: Order[] = savedServedStr ? JSON.parse(savedServedStr) : [];
+
+      const combinedMap = new Map<string, Order>();
+      dbOrders.forEach((o) => combinedMap.set(o.id, o));
+      savedPending.forEach((o) => combinedMap.set(o.id, o));
+      savedServed.forEach((o) => combinedMap.set(o.id, o));
+
+      let allOrders = Array.from(combinedMap.values());
+
+      if (search) {
+        const q = search.toLowerCase();
+        allOrders = allOrders.filter(
+          (o) =>
+            o.invoiceNo.toLowerCase().includes(q) ||
+            o.items.some((i) => i.name.toLowerCase().includes(q))
+        );
+      }
+
+      if (paymentMode && paymentMode !== 'ALL') {
+        allOrders = allOrders.filter((o) => o.paymentMode === paymentMode);
+      }
+
+      setOrders(allOrders);
+    } catch {
       setOrders([]);
     } finally {
       setIsLoading(false);

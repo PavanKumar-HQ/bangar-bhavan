@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { DashboardMetrics } from '../types';
+import { DashboardMetrics, Order } from '../types';
 import { api } from '../lib/api';
+import { getLocalHistoryFromDB } from '../lib/db';
 import {
   IndianRupee,
   ShoppingBag,
@@ -77,14 +78,101 @@ export const Dashboard: React.FC = () => {
   const fetchDashboard = async () => {
     setIsLoading(true);
     try {
-      const res = await api.get('/dashboard');
-      if (res.data && res.data.today && res.data.charts) {
-        setData(res.data);
-      } else {
-        setData(DEFAULT_FALLBACK_DASHBOARD);
+      if (navigator.onLine) {
+        const res = await api.get('/dashboard');
+        if (res.data && res.data.today && res.data.charts) {
+          setData(res.data);
+          setIsLoading(false);
+          return;
+        }
       }
     } catch (err) {
-      console.warn('Failed to fetch dashboard metrics from server, loading offline fallback:', err);
+      console.warn('Failed to fetch dashboard metrics from server, loading offline metrics:', err);
+    }
+
+    // Compute metrics from local history & localStorage orders
+    try {
+      const localHistory = await getLocalHistoryFromDB();
+      const savedPendingStr = localStorage.getItem('bbc_pending_orders');
+      const savedPending: Order[] = savedPendingStr ? JSON.parse(savedPendingStr) : [];
+      const savedServedStr = localStorage.getItem('bbc_served_orders');
+      const savedServed: Order[] = savedServedStr ? JSON.parse(savedServedStr) : [];
+
+      const allOrdersMap = new Map<string, Order>();
+      localHistory.forEach((o) => allOrdersMap.set(o.id, o));
+      savedPending.forEach((o) => allOrdersMap.set(o.id, o));
+      savedServed.forEach((o) => allOrdersMap.set(o.id, o));
+
+      const allOrders = Array.from(allOrdersMap.values());
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todayOrders = allOrders.filter(
+        (o) => o.createdAt && o.createdAt.startsWith(todayStr)
+      );
+
+      const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
+      const totalOrdersCount = todayOrders.length;
+      const pendingCount = todayOrders.filter((o) => o.status === 'PENDING').length;
+      const servedCount = todayOrders.filter((o) => o.status === 'SERVED').length;
+      const avgBill = totalOrdersCount > 0 ? Math.round(todayRevenue / totalOrdersCount) : 0;
+      const parcelCount = todayOrders.filter((o) => o.isParcel).length;
+
+      // Calculate dish counts
+      const dishCountMap: Record<string, { qty: number; revenue: number }> = {};
+      todayOrders.forEach((o) => {
+        (o.items || []).forEach((item) => {
+          if (!dishCountMap[item.name]) {
+            dishCountMap[item.name] = { qty: 0, revenue: 0 };
+          }
+          dishCountMap[item.name].qty += item.quantity;
+          dishCountMap[item.name].revenue += item.price * item.quantity;
+        });
+      });
+
+      const topDishesArray = Object.entries(dishCountMap)
+        .map(([name, stat]) => ({ name, qty: stat.qty, revenue: stat.revenue }))
+        .sort((a, b) => b.qty - a.qty);
+
+      const topSellingDish = topDishesArray.length > 0 ? topDishesArray[0].name : 'None';
+
+      // Payment distribution
+      let cashTotal = 0;
+      let upiTotal = 0;
+      let cardTotal = 0;
+      todayOrders.forEach((o) => {
+        if (o.paymentMode === 'CASH') cashTotal += o.grandTotal || 0;
+        else if (o.paymentMode === 'UPI') upiTotal += o.grandTotal || 0;
+        else if (o.paymentMode === 'CARD') cardTotal += o.grandTotal || 0;
+      });
+
+      setData({
+        today: {
+          revenue: todayRevenue,
+          orders: totalOrdersCount,
+          pending: pendingCount,
+          served: servedCount,
+          avgBill,
+          parcelCount,
+          topSellingDish
+        },
+        month: {
+          revenue: todayRevenue,
+          orders: totalOrdersCount,
+          avgBill,
+          prevRevenue: 0,
+          growthPercentage: 0
+        },
+        charts: {
+          revenueByHour: DEFAULT_FALLBACK_DASHBOARD.charts.revenueByHour,
+          weeklyRevenue: DEFAULT_FALLBACK_DASHBOARD.charts.weeklyRevenue,
+          topSellingDishes: topDishesArray.slice(0, 5),
+          paymentDistribution: [
+            { mode: 'CASH', value: cashTotal },
+            { mode: 'UPI', value: upiTotal },
+            { mode: 'CARD', value: cardTotal }
+          ]
+        }
+      });
+    } catch {
       setData(DEFAULT_FALLBACK_DASHBOARD);
     } finally {
       setIsLoading(false);

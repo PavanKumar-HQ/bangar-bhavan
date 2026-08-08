@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MenuItem, Order, PaymentMode, CartItem, ShopSettings } from '../types';
 import { api } from '../lib/api';
-import { cacheMenuInDB, getMenuFromDB, saveOrderOfflineQueue, getShopSettingsLocal, saveShopSettingsLocal } from '../lib/db';
+import { cacheMenuInDB, getMenuFromDB, saveOrderOfflineQueue, getShopSettingsLocal, saveShopSettingsLocal, saveOrderToLocalHistory } from '../lib/db';
 import { MenuGrid } from '../components/billing/MenuGrid';
 import { RunningBill } from '../components/billing/RunningBill';
 import { PendingOrdersBar } from '../components/billing/PendingOrdersBar';
@@ -222,6 +222,7 @@ export const Billing: React.FC = () => {
 
     // Step 1: Immediately add to pending queue & clear cart
     setPendingOrders((prev) => [...prev, localOrder]);
+    saveOrderToLocalHistory(localOrder);
     setPreviewOrder(localOrder);
     setCartMap({});
     setIsParcel(false);
