@@ -88,16 +88,6 @@ export const Header: React.FC = () => {
           <Printer className={`w-3.5 h-3.5 ${isConnected ? 'text-darkbrown-900' : 'text-cream-300'}`} />
           <span className="hidden md:inline">{isConnected ? 'PRINTER READY' : 'NO PRINTER'}</span>
         </div>
-
-        {/* Logout Button */}
-        <button
-          onClick={logout}
-          className="bg-deepred-900 hover:bg-darkbrown-900 text-cream-100 p-1.5 sm:px-2.5 sm:py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors border border-deepred-700"
-          title="Logout"
-        >
-          <LogOut className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Logout</span>
-        </button>
       </div>
     </header>
   );
